@@ -9,8 +9,8 @@ import org.junit.Test;
 
 /**
  * Base class for all tests that test the {@link CFileSystem}. Each test can be
- * skipped by not adding the specific {@code TEST_} to the {@code runningTests}. 
- * This test also tests basic functionality such as the root and filesetting 
+ * skipped by not adding the specific {@code TEST_} to the {@code runningTests}.
+ * This test also tests basic functionality such as the root and filesetting
  * implementations.
  *
  * @author Clayn <clayn_osmato@gmx.de>
@@ -57,6 +57,7 @@ public abstract class CFileSystemTest extends BaseCFSTest
 
     /**
      * Test of getFileSettings method.
+     *
      * @throws java.lang.Exception
      */
     @Test

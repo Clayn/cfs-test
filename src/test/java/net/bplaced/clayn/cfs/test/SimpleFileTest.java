@@ -28,17 +28,20 @@ public abstract class SimpleFileTest extends BaseCFSTest
 
     protected static final String TEST_EXISTS = "exists";
     protected static final String TEST_CREATE = "create";
+    protected static final String TEST_CREATE_SAFE="createSafe";
     protected static final String TEST_DELETE = "delete";
     protected static final String TEST_NAME = "getName";
     protected static final String TEST_PARENT = "getParent";
     protected static final String TEST_SIZE = "getSize";
     protected static final String TEST_READ = "openRead";
     protected static final String TEST_WRITE = "openWrite";
+    protected static final String TEST_APPEND="openAppend";
     protected static final String TEST_STRING = "toString";
 
     protected static final String[] TEST_ALL = new String[]
     {
         TEST_CREATE,
+        TEST_CREATE_SAFE,
         TEST_DELETE,
         TEST_EXISTS,
         TEST_NAME,
@@ -46,7 +49,8 @@ public abstract class SimpleFileTest extends BaseCFSTest
         TEST_READ,
         TEST_SIZE,
         TEST_STRING,
-        TEST_WRITE
+        TEST_WRITE,
+        TEST_APPEND
     };
 
     public SimpleFileTest()
@@ -77,6 +81,20 @@ public abstract class SimpleFileTest extends BaseCFSTest
         assertFalse(file.exists());
         file.create();
         assertTrue(file.exists());
+    }
+    
+    @Test
+    public final void testCreateSafe() throws Exception
+    {
+        checkTest(TEST_CREATE_SAFE);
+        System.out.println(TEST_CREATE_SAFE);
+        CFileSystem cfs=getFileSystem();
+        SimpleFile file=cfs.getFile("Test.txt");
+        assertNotNull(file);
+        assertFalse(file.exists());
+        file.createSafe();
+        assertTrue(file.exists());
+        file.createSafe();
     }
 
     @Test
@@ -182,7 +200,35 @@ public abstract class SimpleFileTest extends BaseCFSTest
         assertEquals(size, file.getSize());
     }
 
-    @Test(expected = IOException.class)
+    @Test
+    public final void testOpenAppend() throws Exception
+    {
+        checkTest(TEST_APPEND);
+        System.out.println(TEST_APPEND);
+        CFileSystem cfs=getFileSystem();
+        SimpleFile file=cfs.getFile("Test.txt");
+        byte[] dataFirst="Hello World".getBytes(file.getCharset());
+        byte[] dataSecond="Foo".getBytes(file.getCharset());
+        file.createSafe();
+        
+        assertEquals(0, file.getSize());
+        int size=dataFirst.length;
+        try(OutputStream out=file.openAppend())
+        {
+            out.write(dataFirst);
+            out.flush();
+        }
+        assertEquals(size, file.getSize());
+        int size2=dataSecond.length;
+        try(OutputStream out=file.openAppend())
+        {
+            out.write(dataSecond);
+            out.flush();
+        }
+        assertEquals(size+size2, file.getSize());
+    }
+    
+    @Test
     public final void testGetSize() throws Exception
     {
         checkTest(TEST_SIZE);
@@ -199,11 +245,17 @@ public abstract class SimpleFileTest extends BaseCFSTest
             out.flush();
         }
         assertEquals(size, file.getSize());
-        assertEquals(file.getSize(), file.getSize(SizeUnit.BYTE),0.001);
-        assertEquals(size/1000.0, file.getSize(SizeUnit.KILO_BYTE),0.001);
-        
+        assertEquals(file.getSize(), file.getSize(SizeUnit.BYTE), 0.001);
+        assertEquals(size / 1000.0, file.getSize(SizeUnit.KILO_BYTE), 0.001);
+
         file = fs.getFile("Test2.txt");
-        file.getSize();
+        try
+        {
+           long expSize=file.getSize();
+            assertEquals(-1, expSize);
+        } catch (IOException iOException)
+        {
+        }
     }
 
     @Test
@@ -214,7 +266,7 @@ public abstract class SimpleFileTest extends BaseCFSTest
         CFileSystem fs = getFileSystem();
         SimpleFile file = fs.getFile("Test.txt");
         SimpleFile file2 = fs.getFile("Test2.txt");
-        SimpleFile file3 = fs.getFile("dir/Test.txt");
+        SimpleFile file3 = fs.getFile(String.format("dir%sTest.txt", fs.getSeparator()));
         List<SimpleFile> files = Arrays.asList(file, file2, file3);
 
         assertEquals(file.getParent().toString() + file.getName(),
@@ -224,9 +276,9 @@ public abstract class SimpleFileTest extends BaseCFSTest
         assertEquals(file3.getParent().toString() + file3.getName(),
                 file3.toString());
 
-        assertEquals("/Test.txt", file.toString());
-        assertEquals("/Test2.txt", file2.toString());
-        assertEquals("/dir/Test.txt", file3.toString());
+        assertEquals(String.format("%sTest.txt", fs.getSeparator()), file.toString());
+        assertEquals(String.format("%sTest2.txt", fs.getSeparator()), file2.toString());
+        assertEquals(String.format("%1$sdir%1$sTest.txt", fs.getSeparator()), file3.toString());
     }
 
     @Test

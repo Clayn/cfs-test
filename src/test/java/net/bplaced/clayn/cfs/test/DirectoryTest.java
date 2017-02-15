@@ -230,12 +230,13 @@ public abstract class DirectoryTest extends BaseCFSTest
     {
         checkTest(TEST_STRING);
         System.out.println(TEST_STRING);
+        String separator=fileSystem.getSeparator();
         Directory dir = fileSystem.getDirectory("Test");
 
-        assertEquals(String.format("/Test%s", fileSystem.getSeparator()),
+        assertEquals(String.format("%1$sTest%1$s", separator),
                 dir.toString());
-        assertEquals(String.format("/Test%1$sTest2%1$s",
-                fileSystem.getSeparator()),
+        assertEquals(String.format("%1$sTest%1$sTest2%1$s",
+                separator),
                 dir.changeDirectory("Test2").toString());
     }
 
